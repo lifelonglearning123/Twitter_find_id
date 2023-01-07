@@ -17,6 +17,7 @@ def get_follower_ids(api, handle_ids):
         f_ids = []
         for user in tweepy.Paginator(client.get_users_followers,handle_id,max_results=1000,user_auth=True).flatten():
             f_ids.append(user.id)
+            print(user.id)
             time.sleep(0.1)
             if len(f_ids) > 1000000:
                 break
