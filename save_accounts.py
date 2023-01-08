@@ -19,7 +19,7 @@ def get_follower_ids(api, handle_ids):
             f_ids.append(user.id)
             print(user.id)
             time.sleep(0.1)
-            if len(f_ids) > 1000000:
+            if len(f_ids) > 1000:
                 break
         followerids.extend(f_ids)
     print ("total length of follower id list: ",len(followerids))

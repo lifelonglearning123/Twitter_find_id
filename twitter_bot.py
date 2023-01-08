@@ -57,8 +57,9 @@ def save_my_followers_ids(client,me):
             json.dump(my_followers_id_list,file,indent=4)
             
 
+#New followers will receive a welcome msg
 def welcome_message(client,me):
-    print('\n\n in welcome message function')
+    print('\n\n Send weclome message to new followers')
     api = get_tweepy_api()
     followers = client.get_users_followers(me.id,max_results=150,user_auth=True)
     follower_ids= [x.id for x in followers.data]
@@ -79,12 +80,14 @@ def welcome_message(client,me):
 
     msg = df.loc[0,'Message']
 
-    print('below are the ids of the new followers who rcvd welcome message\n\n ')
+    print('Below is a list of new followers who have received welcome messages from us.\n\n ')
     for follower_id in follower_ids:
         if follower_id not in old_ids:
             with open(os.path.join(path,'log.csv'), 'a') as file:
                 file.write(f'\"Welcome Message sent to a new follower\", {datetime.today().replace(microsecond=0)}\n')
             api.send_direct_message(follower_id,text=msg)
+            username = follower_id.screen_name
+            print(username)
             print(follower_id)
             old_ids.append(follower_id)
             flag = True
@@ -93,11 +96,11 @@ def welcome_message(client,me):
         with open(os.path.join(path,me.username+'.json'),'w') as file:
             json.dump(old_ids,file,indent=4)
     else:
-        print('No new followers found since the last time this script ran')
+        print('There have been no new followers detected since the last time this script was run.')
         
 
 def follow_bot(client,me):
-    print('\n\n in follow function')
+    print('\n\n Currently in follow function')
     conn, db_connection = get_cursor_connection()
     count = get_count()
 
@@ -118,8 +121,8 @@ def follow_bot(client,me):
         update_count(count)    
         db_connection.close()
         return
-
-    if (not posted_in_100_days) or (user.profile_image_url == default_profile_image) or (following_me) or (user.public_metrics['followers_count']>1):
+    #If it is ready following me or it does not fit one of 3 criteria it will not follow
+    if (not posted_in_100_days) and (user.profile_image_url == default_profile_image) and (user.public_metrics['followers_count']>1) or (following_me):
         with open(os.path.join(path,'log.csv'), 'a') as file:
             file.write(f'\"One of the conditions did not meet, so not following: {user.username}\", {datetime.today().replace(microsecond=0)}\n')
         print("one of the criteria did not meet, so not following: " ,user.username)
@@ -186,8 +189,10 @@ def retweet(client):
     client.retweet(choice(tweets).id)
 
 if __name__ ==  '__main__':
-    i=0
+    i=1
+    #get_tweepy_client calls on Tweepy API
     client = get_tweepy_client()
+    #me captures client data
     me = client.get_me().data
     while True:
         keys = config['genvalues']
@@ -196,20 +201,22 @@ if __name__ ==  '__main__':
         tweet_mode = int((int(tweet_interval)*60)/135)
         retweet_mode = int((int(retweet_interval)*60)/135)
         i+=1
-        welcome_message(client,me)
+        #welcome_message(client,me)
         if i%2==0:
             follow_bot(client,me)
         if i%15==0:
             client = get_tweepy_client()
             me = client.get_me().data
             unfollow(client,me)
+        """
         if i%tweet_mode==0:
             try:
                 post_random_tweet_from_list(client)
             except:
                 pass
+        """
         if i%retweet_mode==0:
             retweet(client)
-        sleep(randint(120,150))
+        sleep(randint(10,15))
         if i>1000:
             i=0
