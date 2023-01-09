@@ -85,7 +85,7 @@ def welcome_message(client,me):
     for i, follower_id in enumerate(follower_ids):
         if follower_id not in old_ids:
             with open(os.path.join(path,'log.csv'), 'a') as file:
-                file.write(f'\"Welcome Message sent to a new follower\", {datetime.today().replace(microsecond=0)}\n')
+                file.write(f'\"Welcome Message sent to a new follower\", \"{follower_usernames[i]}\", {datetime.today().replace(microsecond=0)}\n')
             api.send_direct_message(follower_id,text=msg)
             print(follower_usernames[i])
             old_ids.append(follower_id)
@@ -177,7 +177,7 @@ def post_random_tweet_from_list(client):
     tweet_texts = df.Tweets.to_list()
     tweet_text = choice(tweet_texts)
     with open(os.path.join(path,'log.csv'), 'a') as file:
-        file.write(f'\"tweeting this\",\"{tweet_text}\", {datetime.today().replace(microsecond=0)}\n')
+        file.write(f'\"Tweeting \",\"{tweet_text}\", {datetime.today().replace(microsecond=0)}\n')
     client.create_tweet(text=tweet_text)
 
 def retweet(client):
@@ -197,10 +197,10 @@ if __name__ ==  '__main__':
         keys = config['genvalues']
         tweet_interval = keys.get('tweet_interval_minutes')
         retweet_interval = keys.get('retweet_interval_minutes')
-        #tweet_mode = int((int(tweet_interval)*60)/135)
-        tweet_mode = int((int(tweet_interval)*60)/15)
-        #retweet_mode = int((int(retweet_interval)*60)/135)
-        retweet_mode = int((int(tweet_interval)*60)/15)
+        tweet_mode = int((int(tweet_interval)*60)/120)
+        #tweet_mode = int((int(tweet_interval)*75)/22)
+        retweet_mode = int((int(retweet_interval)*60)/120)
+        #retweet_mode = int((int(tweet_interval)*60)/22)
         i+=1
         welcome_message(client,me)
         if i%2==0:
@@ -209,17 +209,16 @@ if __name__ ==  '__main__':
             client = get_tweepy_client()
             me = client.get_me().data
             unfollow(client,me)
-
-        #if i%tweet_mode==0:
-            #try:
-                #post_random_tweet_from_list(client)
-           #except:
-                #pass
+        if i%tweet_mode==0:
+            try:
+                post_random_tweet_from_list(client)
+            except:
+                pass
 
         #Can't use retweet as we can't control the content of followers.
         #if i%retweet_mode==0:
         #   retweet(client)
 
-        sleep(randint(120,150))
+        sleep(randint(100,140))
         if i>1000:
             i=0
