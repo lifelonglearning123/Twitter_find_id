@@ -63,6 +63,7 @@ def welcome_message(client,me):
     api = get_tweepy_api()
     followers = client.get_users_followers(me.id,max_results=150,user_auth=True)
     follower_ids= [x.id for x in followers.data]
+    follower_usernames = [x.username for x in followers.data]
     if me.username+'.json' in os.listdir(path):
         with open(os.path.join(path,me.username+'.json'),'r') as file:
             old_ids = json.load(file)
@@ -81,14 +82,12 @@ def welcome_message(client,me):
     msg = df.loc[0,'Message']
 
     print('Below is a list of new followers who have received welcome messages from us.\n\n ')
-    for follower_id in follower_ids:
+    for i, follower_id in enumerate(follower_ids):
         if follower_id not in old_ids:
             with open(os.path.join(path,'log.csv'), 'a') as file:
                 file.write(f'\"Welcome Message sent to a new follower\", {datetime.today().replace(microsecond=0)}\n')
             api.send_direct_message(follower_id,text=msg)
-            username = follower_id.screen_name
-            print(username)
-            print(follower_id)
+            print(follower_usernames[i])
             old_ids.append(follower_id)
             flag = True
             sleep(randint(5,15))
@@ -124,8 +123,8 @@ def follow_bot(client,me):
     #If it is ready following me or it does not fit one of 3 criteria it will not follow
     if (not posted_in_100_days) and (user.profile_image_url == default_profile_image) and (user.public_metrics['followers_count']>1) or (following_me):
         with open(os.path.join(path,'log.csv'), 'a') as file:
-            file.write(f'\"One of the conditions did not meet, so not following: {user.username}\", {datetime.today().replace(microsecond=0)}\n')
-        print("one of the criteria did not meet, so not following: " ,user.username)
+            file.write(f'\"Not following One of the conditions did not meet\", \"{user.username}\", {datetime.today().replace(microsecond=0)}\n')
+            print("one of the criteria did not meet, so not following: " ,user.username)
         update_count(count)
     else:    
         try:
@@ -134,7 +133,7 @@ def follow_bot(client,me):
             update_count(count)
             db_connection.commit()
             with open(os.path.join(path,'log.csv'), 'a') as file:
-                file.write(f'\"followed: {user.username}\", {datetime.today().replace(microsecond=0)}\n')
+                file.write(f'\"followed:\", \"{user.username}\", {datetime.today().replace(microsecond=0)}\n')
             print("followed: ",user.username)
         except Exception as e:
             print(e)
@@ -154,7 +153,7 @@ def unfollow(client,me):
             following_me = z[1] in my_followers_id_list
             if not following_me:
                 with open(os.path.join(path,'log.csv'), 'a') as file:
-                    file.write(f'\"unfollowing a user who is not following as back\", {datetime.today().replace(microsecond=0)}\n')
+                    file.write(f'\"unfollowing\", \"a user who is not following as back\", {datetime.today().replace(microsecond=0)}\n')
                 print("This person with id "+z[1]+" is not following us back so unfollowing him")
                 client.unfollow_user(target_user_id = z[1])
             else:
@@ -178,7 +177,7 @@ def post_random_tweet_from_list(client):
     tweet_texts = df.Tweets.to_list()
     tweet_text = choice(tweet_texts)
     with open(os.path.join(path,'log.csv'), 'a') as file:
-        file.write(f'\"tweeting this{tweet_text}\", {datetime.today().replace(microsecond=0)}\n')
+        file.write(f'\"tweeting this\",\"{tweet_text}\", {datetime.today().replace(microsecond=0)}\n')
     client.create_tweet(text=tweet_text)
 
 def retweet(client):
@@ -198,25 +197,29 @@ if __name__ ==  '__main__':
         keys = config['genvalues']
         tweet_interval = keys.get('tweet_interval_minutes')
         retweet_interval = keys.get('retweet_interval_minutes')
-        tweet_mode = int((int(tweet_interval)*60)/135)
-        retweet_mode = int((int(retweet_interval)*60)/135)
+        #tweet_mode = int((int(tweet_interval)*60)/135)
+        tweet_mode = int((int(tweet_interval)*60)/15)
+        #retweet_mode = int((int(retweet_interval)*60)/135)
+        retweet_mode = int((int(tweet_interval)*60)/15)
         i+=1
-        #welcome_message(client,me)
+        welcome_message(client,me)
         if i%2==0:
             follow_bot(client,me)
         if i%15==0:
             client = get_tweepy_client()
             me = client.get_me().data
             unfollow(client,me)
-        """
-        if i%tweet_mode==0:
-            try:
-                post_random_tweet_from_list(client)
-            except:
-                pass
-        """
-        if i%retweet_mode==0:
-            retweet(client)
-        sleep(randint(10,15))
+
+        #if i%tweet_mode==0:
+            #try:
+                #post_random_tweet_from_list(client)
+           #except:
+                #pass
+
+        #Can't use retweet as we can't control the content of followers.
+        #if i%retweet_mode==0:
+        #   retweet(client)
+
+        sleep(randint(120,150))
         if i>1000:
             i=0
