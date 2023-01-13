@@ -166,7 +166,7 @@ def unfollow(client,me):
             conn.commit()
         x = randint(0,20)
         print("sleeping for "+str(x)+" seconds")
-        sleep.sleep(x)
+        sleep(x)
     conn.close()
 
 def post_random_tweet_from_list(client):
