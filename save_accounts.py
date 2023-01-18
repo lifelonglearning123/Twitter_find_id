@@ -17,7 +17,8 @@ def get_follower_ids(api, handle_ids):
         f_ids = []
         for user in tweepy.Paginator(client.get_users_followers,handle_id,max_results=1000,user_auth=True).flatten():
             f_ids.append(user.id)
-            print(user.id)
+
+            print("Twitter username ", user.username)
             time.sleep(0.1)
             if len(f_ids) > 1000:
                 break
@@ -61,7 +62,7 @@ def close_connection(connection):
     
 
 if __name__ == "__main__":
-
+    print("Obtaining Twitter Profile username: ")
     abspath = os.path.abspath(__file__)
     path = os.path.dirname(abspath)
     config = ConfigParser(interpolation=None)

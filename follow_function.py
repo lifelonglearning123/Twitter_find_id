@@ -1,16 +1,15 @@
 import tweepy, json, os, requests
-from random import randint, choice
+from random import randint,choice
 from time import sleep
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime,timedelta
 from configparser import ConfigParser
 from datetime import datetime
 
 abspath = os.path.abspath(__file__)
 path = os.path.dirname(abspath)
-config = ConfigParser(interpolation=None)
-config.read(os.path.join(path, 'config.ini'))
-
+config  = ConfigParser(interpolation=None)
+config.read(os.path.join(path,'config.ini'))
 
 def get_tweepy_client():
     keys = config['apivalues']
@@ -19,10 +18,8 @@ def get_tweepy_client():
     access_token = keys.get('access_token')
     access_token_secret = keys.get('access_token_secret')
     bt = keys.get('bearer_token')
-    client = tweepy.Client(bearer_token=bt, consumer_key=consumer_key, consumer_secret=consumer_secret,
-                           access_token=access_token, access_token_secret=access_token_secret)
+    client = tweepy.Client(bearer_token=bt,consumer_key=consumer_key, consumer_secret= consumer_secret, access_token=access_token, access_token_secret= access_token_secret)
     return client
-
 
 def get_tweepy_api():
     keys = config['apivalues']
@@ -34,7 +31,6 @@ def get_tweepy_api():
     auth01.set_access_token(access_token, access_token_secret)
     api = tweepy.API(auth01, wait_on_rate_limit=True)
     return api
-
 
 def get_cursor_connection():
     import sqlite3
@@ -65,6 +61,7 @@ def save_my_followers_ids(client, me):
         json.dump(my_followers_id_list, file, indent=4)
 
 
+
 # New followers will receive a welcome msg
 def welcome_message(client, me):
     print('\n\n Send weclome message to new followers')
@@ -83,11 +80,11 @@ def welcome_message(client, me):
         return
 
     flag = False
-     sheet_url = "https://docs.google.com/spreadsheets/d/18wj4qw9FiliqFNP2LLGuf5rMhF1bFcF7FF7E9fbc66E/edit#gid=0"
-     url_1 = sheet_url.replace('/edit#gid=', '/export?format=csv&gid=')
-     df = pd.read_csv(url_1)
+    # sheet_url = "https://docs.google.com/spreadsheets/d/18wj4qw9FiliqFNP2LLGuf5rMhF1bFcF7FF7E9fbc66E/edit#gid=0"
+    # url_1 = sheet_url.replace('/edit#gid=', '/export?format=csv&gid=')
+    # df = pd.read_csv(url_1)
 
-     msg = df.loc[0,'Message']
+    # msg = df.loc[0,'Message']
 
     print('Below is a list of new followers who have received welcome messages from us.\n\n ')
     for i, follower_id in enumerate(follower_ids):
@@ -95,7 +92,7 @@ def welcome_message(client, me):
             with open(os.path.join(path, 'log.csv'), 'a') as file:
                 file.write(
                     f'\"Welcome Message sent to a new follower\", \"{follower_usernames[i]}\", {datetime.today().replace(microsecond=0)}\n')
-            api.send_direct_message(follower_id, text=msg)
+            api.send_direct_message(follower_id, text="Thanks for following @macaws.ai! We're excited to help you elevate your social media and SEO game. #AI #automation #socialmediamarketing #SEO")
             print(follower_usernames[i])
             old_ids.append(follower_id)
             flag = True
@@ -153,92 +150,26 @@ def follow_bot(client, me):
     db_connection.close()
 
 
-def unfollow(client, me):
-    print('\n\n in unfollow function')
-    c, conn = get_cursor_connection()
-
-    c.execute("""select ID, TwitterID from Followed_Ids where timestamp <= datetime('now', '-3 days') limit ? """, (5,))
-    t = c.fetchall()
-    for z in t:
-        try:
-            with open(os.path.join(path, me.username + '.json'), 'r') as f:
-                my_followers_id_list = json.load(f)
-            following_me = z[1] in my_followers_id_list
-            if not following_me:
-                with open(os.path.join(path, 'log.csv'), 'a') as file:
-                    file.write(
-                        f'\"unfollowing\", \"a user who is not following as back\", \"{follower_usernames[i]}\", {datetime.today().replace(microsecond=0)}\n')
-                print("This person with id " + z[1] + " is not following us back so unfollowing him")
-                client.unfollow_user(target_user_id=z[1])
-            else:
-                print("this nice guy with ID " + z[
-                    1] + " is following us back so we gonna delete his name from followedIds without unfollowing him")
-            c.execute("""Delete from Followed_Ids where id = ?""", (z[0],))
-            conn.commit()
-        except Exception as e:
-            print("some error occured but going to delete this guy with id " + z[
-                1] + " form followids anyway\n error is:  " + str(e))
-            c.execute("""Delete from Followed_Ids where id = ?""", (z[0],))
-            conn.commit()
-        x = randint(0, 20)
-        print("sleeping for " + str(x) + " seconds")
-        sleep(x)
-    conn.close()
-
-
-def post_random_tweet_from_list(client):
-    print('doing a tweet')
-    sheet_url = "https://docs.google.com/spreadsheets/d/1VgDVQ6lgl0GQpm7w28AAZvA_wcsbigaqaf_ztDXn1LM/edit#gid=0"
-    url_1 = sheet_url.replace('/edit#gid=', '/export?format=csv&gid=')
-    df = pd.read_csv(url_1)
-    tweet_texts = df.Tweets.to_list()
-    tweet_text = choice(tweet_texts)
-    with open(os.path.join(path, 'log.csv'), 'a') as file:
-        file.write(f'\"Tweeting \",\"{tweet_text}\", {datetime.today().replace(microsecond=0)}\n')
-    client.create_tweet(text=tweet_text)
-
-
-def retweet(client):
-    with open(os.path.join(path, 'log.csv'), 'a') as file:
-        file.write(f'\"retweeting a tweet from home timeline\", {datetime.today().replace(microsecond=0)}\n')
-    print('retweeting')
-    tweets = client.get_home_timeline().data
-    client.retweet(choice(tweets).id)
-
-
-if __name__ == '__main__':
-    i = 1
-    # get_tweepy_client calls on Tweepy API
+if __name__ ==  '__main__':
+    i=1
+    #get_tweepy_client calls on Tweepy API
     client = get_tweepy_client()
-    # me captures client data
+    #me captures client data
     me = client.get_me().data
     while True:
         keys = config['genvalues']
         tweet_interval = keys.get('tweet_interval_minutes')
         retweet_interval = keys.get('retweet_interval_minutes')
-        tweet_mode = int((int(tweet_interval) * 60) / 120)
-        # tweet_mode = int((int(tweet_interval)*75)/22)
-        retweet_mode = int((int(retweet_interval) * 60) / 120)
-        # retweet_mode = int((int(tweet_interval)*60)/22)
-        i += 1
-        welcome_message(client, me)
-        if i % 2 == 0:
-            follow_bot(client, me)
+        i+=1
+        welcome_message(client,me) #Send welcome message if there is someone new following
+        if i%2==0:
+            follow_bot(client,me)
 
-        if i % 15 == 0:
-        # client = get_tweepy_client()
-        # me = client.get_me().data
-        # unfollow(client,me)
-        if i % tweet_mode == 0:
-            try:
-            # post_random_tweet_from_list(client)
-            except:
-                pass
 
-        # Can't use retweet as we can't control the content of followers.
-        # if i%retweet_mode==0:
+        #Can't use retweet as we can't control the content of followers.
+        #if i%retweet_mode==0:
         #   retweet(client)
 
-        sleep(randint(100, 140))
-        if i > 1000:
-            i = 0
+        sleep(randint(100,140))
+        if i>1000:
+            i=0
